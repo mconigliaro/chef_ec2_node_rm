@@ -1,6 +1,6 @@
 module ChefEc2NodeRm
   class Knife
-    include ChefEc2NodeRm::Logging
+    include Logging
 
     def initialize(command)
       @command = "knife #{command} --format json"

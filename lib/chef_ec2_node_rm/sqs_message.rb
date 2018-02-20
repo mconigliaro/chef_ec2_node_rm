@@ -1,7 +1,5 @@
 module ChefEc2NodeRm
   class SqsMessage
-    include Logging
-
     attr_reader :instance_id, :state
 
     def initialize(msg)

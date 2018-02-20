@@ -1,7 +1,6 @@
 require 'aws-sdk-sqs'
 require 'json'
 require 'logger'
-require 'pp'
 
 require 'chef_ec2_node_rm/logging'
 
