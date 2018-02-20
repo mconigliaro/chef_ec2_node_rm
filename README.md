@@ -85,4 +85,4 @@ If you're managing EC2 instances with a Chef server, this gem can help you by au
 
 ## Credits
 
-- Originally inspired by [Matt Revell's script](http://blog.mattrevell.net/2014/02/19/automatically-remove-dead-autoscale-nodes-from-chef-server/)
+- Inspired by [Matt Revell's script](http://blog.mattrevell.net/2014/02/19/automatically-remove-dead-autoscale-nodes-from-chef-server/)
