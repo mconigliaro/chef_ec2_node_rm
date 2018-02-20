@@ -5,7 +5,15 @@ module ChefEc2NodeRm
     end
 
     def self.logger
-      @logger ||= Logger.new(STDOUT)
+      @logger ||= Logger.new(@device || STDOUT)
+    end
+
+    def logger_device(device)
+      Logging.logger_device(device)
+    end
+
+    def self.logger_device(device)
+      @device = device
     end
   end
 end

@@ -10,7 +10,7 @@ module ChefEc2NodeRm
 
       attr_map = {
         instance_id: ['detail', 'instance-id'],
-        state: ['detail', 'state']
+        state: %w[detail state]
       }
       attr_map.each do |name, path|
         value = msg_parsed.dig(*path)

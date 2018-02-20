@@ -7,20 +7,20 @@ module ChefEc2NodeRm
     def initialize(urls)
       @pollers = urls.map do |url|
         begin
-          logger.debug(url) { "Verifying queue" }
+          logger.debug(url) { 'Verifying queue' }
           # Each queue is verified by making a request for its attributes. An
           # exception should get raised for any queue that is non-existent or
           # otherwise unavailable.
           Aws::SQS::Queue.new(url).attributes
           Aws::SQS::QueuePoller.new(url)
         rescue Aws::Errors::ServiceError => e
-          logger.error(url) { "#{e.message} (ignoring)" }
+          logger.error(url) { e.message }
           nil
         end
       end.compact
     end
 
-    def start(dry_run: false, &block)
+    def start
       trap('SIGINT') do
         Thread.new do
           logger.info('Shutting down')
@@ -30,8 +30,11 @@ module ChefEc2NodeRm
       @pollers.map do |poller|
         Thread.new do
           Thread.current.name = poller.queue_url
-          logger.info(Thread.current.name) { "Starting poller#{' (dry-run)' if dry_run}" }
-          poller.poll(skip_delete: true) { |msg| yield(poller, msg) }
+          logger.info(Thread.current.name) { 'Starting poller' }
+          poller.poll(skip_delete: true) do |msg|
+            logger.debug(Thread.current.name) { %(Message received: id='#{msg.message_id}' body='#{msg.body.delete("\n")}') }
+            yield(poller, msg)
+          end
         end
       end.each(&:join)
       logger.info('No queues left to poll')

@@ -1,26 +1,39 @@
 #!/usr/bin/env ruby
 
-$LOAD_PATH.unshift File.expand_path("../../lib", __FILE__)
-require "chef_ec2_node_rm"
+$LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
+require 'chef_ec2_node_rm'
 
 include ChefEc2NodeRm::Logging
 
-logger.level = Logger.const_get('DEBUG') # FIXME: options[:log_level].upcase
-
 # FIXME: Parameterize
-urls = %w(
+logger.level = Logger.const_get('INFO')
+urls = %w[
   https://sqs.us-east-1.amazonaws.com/365774320087/chef
   https://sqs.us-west-2.amazonaws.com/365774320087/cheff
-)
-states = %w(terminated)
-
+]
+states = %w[terminated]
+knife_search_attribute = 'ec2_instance_id'
+dry_run = true
 
 ChefEc2NodeRm::SqsPollers.new(urls).start do |poller, msg|
-  logger.debug(Thread.current.name) { "Message received: id='#{msg.message_id}', body='#{msg.body.delete("\n")}'" }
   msg_parsed = ChefEc2NodeRm::SqsMessage.new(msg.body)
-  unless states.include?(msg_parsed.state)
-    logger.info(Thread.current.name) { "Instance id='#{msg_parsed.instance_id}' state='#{msg_parsed.state}' (no-op)" }
-    next
+  logger.info(Thread.current.name) { "Message received: id='#{msg.message_id}' instance_id='#{msg_parsed.instance_id}' state='#{msg_parsed.state}'" }
+
+  if states.include?(msg_parsed.state)
+    search_results = ChefEc2NodeRm::Knife.new("search node '#{knife_search_attribute}:#{msg_parsed.instance_id}' --id-only").run
+    if search_results['results'].is_a?(Numeric) && search_results['rows'].respond_to?(:each)
+      logger.info("Found #{search_results['results']} Chef node(s) with instance_id: #{msg_parsed.instance_id}")
+      search_results['rows'].each do |name|
+        %w[node client].each do |type|
+          logger.info(Thread.current.name) { "Deleting #{type}: #{name}#{' (dry-run)' if dry_run}" }
+          knife("#{type} delete #{name} -y") unless dry_run
+        end
+      end
+    else
+      logger.error("Knife search results are malformed: #{search_results}")
+    end
   end
-  logger.info("Searching for instance with instance_id: #{msg_parsed.instance_id}")
+
+  logger.info(Thread.current.name) { "Deleting message: id='#{msg.message_id}'#{' (dry-run)' if dry_run}" }
+  poller.delete_message(msg) unless dry_run
 end
