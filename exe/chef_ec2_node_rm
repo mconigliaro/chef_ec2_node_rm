@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH.unshift File.expand_path("../../lib", __FILE__)
+require "chef_ec2_node_rm"
+
+include ChefEc2NodeRm::Logging
+
+logger.level = Logger.const_get('DEBUG') # FIXME: options[:log_level].upcase
+
+# FIXME: Parameterize
+urls = %w(
+  https://sqs.us-east-1.amazonaws.com/365774320087/chef
+  https://sqs.us-west-2.amazonaws.com/365774320087/cheff
+)
+states = %w(terminated)
+
+
+ChefEc2NodeRm::SqsPollers.new(urls).start do |poller, msg|
+  logger.debug(Thread.current.name) { "Message received: id='#{msg.message_id}', body='#{msg.body.delete("\n")}'" }
+  msg_parsed = ChefEc2NodeRm::SqsMessage.new(msg.body)
+  unless states.include?(msg_parsed.state)
+    logger.info(Thread.current.name) { "Instance id='#{msg_parsed.instance_id}' state='#{msg_parsed.state}' (no-op)" }
+    next
+  end
+  logger.info("Searching for instance with instance_id: #{msg_parsed.instance_id}")
+end
