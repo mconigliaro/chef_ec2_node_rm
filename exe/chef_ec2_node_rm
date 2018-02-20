@@ -1,32 +1,67 @@
 #!/usr/bin/env ruby
 
+require 'optparse'
+
 $LOAD_PATH.unshift File.expand_path('../../lib', __FILE__)
 require 'chef_ec2_node_rm'
 
+options = {
+  aws_sqs_instance_states: %w[terminated],
+  aws_sqs_urls: [],
+  knife_search_attribute: 'ec2_instance_id',
+  log_level: 'info',
+  dry_run: false
+}
+OptionParser.new do |opts|
+  opts.version = ChefEc2NodeRm::VERSION
+  opts.banner = "Usage: #{$PROGRAM_NAME} [options]\n\n"
+
+  opts.on_tail('-s', '--aws-sqs-instance-states <state>[, <state>, ...]', Array, 'Deletes will be triggered for these instance states') do |opt|
+    options[:aws_sqs_instance_states] = opt
+  end
+
+  opts.on_tail('-u', '--aws-sqs-urls <URL>[, <URL>, ...]', Array, 'List of AWS SQS URLs') do |opt|
+    options[:aws_sqs_urls] = opt
+  end
+
+  opts.on_tail('-d', '--dry-run', FalseClass, 'Show what will happen without actually deleting anything') do
+    options[:dry_run] = true
+  end
+
+  opts.on_tail('-h', '--help', 'Show this message') do
+    puts opts.help
+    exit
+  end
+
+  opts.on_tail('-a', '--knife-search-attribute <attribute>', String, 'Instance ID attribute to use in knife search') do |opt|
+    options[:knife_search_attribute] = opt
+  end
+
+  opts.on_tail('-l', '--log-level <level>', String, 'Log level') do |opt|
+    options[:log_level] = opt
+  end
+
+  opts.on_tail('-v', '--version', 'Show version') do
+    puts format("#{opts.program_name} v#{opts.version}\n#{ChefEc2NodeRm::URL}\n#{ChefEc2NodeRm::AUTHORS.join("\n")}\n")
+    exit
+  end
+end.parse!
+
 include ChefEc2NodeRm::Logging
+logger.level = Logger.const_get(options[:log_level].upcase)
 
-# FIXME: Parameterize
-logger.level = Logger.const_get('INFO')
-urls = %w[
-  https://sqs.us-east-1.amazonaws.com/365774320087/chef
-  https://sqs.us-west-2.amazonaws.com/365774320087/cheff
-]
-states = %w[terminated]
-knife_search_attribute = 'ec2_instance_id'
-dry_run = true
-
-ChefEc2NodeRm::SqsPollers.new(urls).start do |poller, msg|
+ChefEc2NodeRm::SqsPollers.new(options[:aws_sqs_urls]).start do |poller, msg|
   msg_parsed = ChefEc2NodeRm::SqsMessage.new(msg.body)
   logger.info(Thread.current.name) { "Message received: id='#{msg.message_id}' instance_id='#{msg_parsed.instance_id}' state='#{msg_parsed.state}'" }
 
-  if states.include?(msg_parsed.state)
-    search_results = ChefEc2NodeRm::Knife.new("search node '#{knife_search_attribute}:#{msg_parsed.instance_id}' --id-only").run
+  if options[:aws_sqs_instance_states].include?(msg_parsed.state)
+    search_results = ChefEc2NodeRm::Knife.new("search node '#{options[:knife_search_attribute]}:#{msg_parsed.instance_id}' --id-only").run
     if search_results['results'].is_a?(Numeric) && search_results['rows'].respond_to?(:each)
       logger.info("Found #{search_results['results']} Chef node(s) with instance_id: #{msg_parsed.instance_id}")
       search_results['rows'].each do |name|
         %w[node client].each do |type|
-          logger.info(Thread.current.name) { "Deleting #{type}: #{name}#{' (dry-run)' if dry_run}" }
-          knife("#{type} delete #{name} -y") unless dry_run
+          logger.info(Thread.current.name) { "Deleting #{type}: #{name}#{' (dry-run)' if options[:dry_run]}" }
+          knife("#{type} delete #{name} -y") unless options[:dry_run]
         end
       end
     else
@@ -34,6 +69,6 @@ ChefEc2NodeRm::SqsPollers.new(urls).start do |poller, msg|
     end
   end
 
-  logger.info(Thread.current.name) { "Deleting message: id='#{msg.message_id}'#{' (dry-run)' if dry_run}" }
-  poller.delete_message(msg) unless dry_run
+  logger.info(Thread.current.name) { "Deleting message: id='#{msg.message_id}'#{' (dry-run)' if options[:dry_run]}" }
+  poller.delete_message(msg) unless options[:dry_run]
 end
