@@ -60,7 +60,7 @@ ChefEc2NodeRm::SqsPollers.new(options[:aws_sqs_urls]).start do |poller, msg|
       logger.info("Found #{search_results['results']} Chef node(s) with instance_id: #{msg_parsed.instance_id}")
       search_results['rows'].each do |name|
         %w[node client].each do |type|
-          logger.info(Thread.current.name) { "Deleting #{type}: #{name}#{' (dry-run)' if options[:dry_run]}" }
+          logger.info("Deleting #{type}: #{name}#{' (dry-run)' if options[:dry_run]}")
           knife("#{type} delete #{name} -y") unless options[:dry_run]
         end
       end
