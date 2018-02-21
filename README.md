@@ -97,6 +97,7 @@ Note that this gem requires the following permissions on the SQS queue:
 
     gem build chef_ec2_node_rm.gemspec
     gem install chef_ec2_node_rm-*.gem
+    gem push chef_ec2_node_rm-*.gem
 
 ## Credits
 
