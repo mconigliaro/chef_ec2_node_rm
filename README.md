@@ -1,6 +1,6 @@
 # chef_ec2_node_rm
 
-If you're managing EC2 instances with a Chef server, this gem can help you by automatically deleting node/client data when instances are destroyed.
+If you're managing EC2 instances with a Chef server, this gem can help prevent your server from becoming polluted with stale node/client data by automatically deleting it whenever instances are destroyed.
 
 ## Getting Started
 
