@@ -2,9 +2,15 @@
 
 If you're managing EC2 instances with a Chef server, this gem can help prevent your server from becoming polluted with stale node/client data by automatically deleting it whenever instances are destroyed.
 
-## AWS Credentials
+## AWS Credentials and Permissions
 
 This gem relies on [aws-sdk](https://aws.amazon.com/sdk-for-ruby/), so AWS credentials will automatically be read from the usual places (credential files under `~/.aws`, environment variables, IAM roles, etc.).
+
+Note that this gem requires the following permissions on the SQS queue:
+
+- sqs:GetQueueAttributes
+- sqs:ReceiveMessage
+- sqs:DeleteMessage
 
 ## Installation
 
