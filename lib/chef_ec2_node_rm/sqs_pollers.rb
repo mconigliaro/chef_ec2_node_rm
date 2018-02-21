@@ -21,12 +21,7 @@ module ChefEc2NodeRm
     end
 
     def start
-      trap('SIGINT') do
-        Thread.new do
-          logger.info('Shutting down')
-          exit
-        end
-      end
+      trap('SIGINT') { Thread.new { exit } }
       @pollers.map do |poller|
         Thread.new do
           Thread.current.name = poller.queue_url

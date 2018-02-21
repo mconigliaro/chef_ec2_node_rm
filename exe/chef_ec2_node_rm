@@ -7,21 +7,16 @@ require 'chef_ec2_node_rm'
 
 options = {
   aws_sqs_instance_states: %w[terminated],
-  aws_sqs_urls: [],
   knife_search_attribute: 'ec2_instance_id',
   log_level: 'info',
   dry_run: false
 }
 OptionParser.new do |opts|
   opts.version = ChefEc2NodeRm::VERSION
-  opts.banner = "Usage: #{$PROGRAM_NAME} [options]\n\n"
+  opts.banner = "Usage: #{$PROGRAM_NAME} [options] <AWS SQS URL(s)>\n\n"
 
-  opts.on_tail('-s', '--aws-sqs-instance-states <state>[, <state>, ...]', Array, 'Deletes will be triggered for these instance states') do |opt|
+  opts.on_tail('-s', '--aws-sqs-instance-states <state>[,<state>,...]', Array, "Deletes will be triggered for these instance states (default: #{options[:aws_sqs_instance_states].join(', ')})") do |opt|
     options[:aws_sqs_instance_states] = opt
-  end
-
-  opts.on_tail('-u', '--aws-sqs-urls <URL>[, <URL>, ...]', Array, 'List of AWS SQS URLs') do |opt|
-    options[:aws_sqs_urls] = opt
   end
 
   opts.on_tail('-d', '--dry-run', FalseClass, 'Show what will happen without actually deleting anything') do
@@ -33,11 +28,11 @@ OptionParser.new do |opts|
     exit
   end
 
-  opts.on_tail('-a', '--knife-search-attribute <attribute>', String, 'Instance ID attribute to use in knife search') do |opt|
+  opts.on_tail('-a', '--knife-search-attribute <attribute>', String, "Instance ID attribute to use in knife search (default: #{options[:knife_search_attribute]})") do |opt|
     options[:knife_search_attribute] = opt
   end
 
-  opts.on_tail('-l', '--log-level <level>', String, 'Log level') do |opt|
+  opts.on_tail('-l', '--log-level <level>', String, "Log level (default: #{options[:log_level]})") do |opt|
     options[:log_level] = opt
   end
 
@@ -45,12 +40,17 @@ OptionParser.new do |opts|
     puts format("#{opts.program_name} v#{opts.version}\n#{ChefEc2NodeRm::URL}\n#{ChefEc2NodeRm::AUTHORS.join("\n")}\n")
     exit
   end
+
+  if ARGV.length.zero?
+    puts opts.help
+    exit(1)
+  end
 end.parse!
 
 include ChefEc2NodeRm::Logging
 logger.level = Logger.const_get(options[:log_level].upcase)
 
-ChefEc2NodeRm::SqsPollers.new(options[:aws_sqs_urls]).start do |poller, msg|
+ChefEc2NodeRm::SqsPollers.new(ARGV).start do |poller, msg|
   msg_parsed = ChefEc2NodeRm::SqsMessage.new(msg.body)
   logger.info(Thread.current.name) { "Message received: id='#{msg.message_id}' instance_id='#{msg_parsed.instance_id}' state='#{msg_parsed.state}'" }
 
