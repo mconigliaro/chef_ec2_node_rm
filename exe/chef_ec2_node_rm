@@ -13,7 +13,7 @@ options = {
 }
 OptionParser.new do |opts|
   opts.version = ChefEc2NodeRm::VERSION
-  opts.banner = "Usage: #{$PROGRAM_NAME} [options] <AWS SQS URL(s)>\n\n"
+  opts.banner = "Usage: #{File.basename($PROGRAM_NAME)} [options] <AWS SQS URL(s)>\n\n"
 
   opts.on_tail('-s', '--aws-sqs-instance-states <state>[,<state>,...]', Array, "Deletes will be triggered for these instance states (default: #{options[:aws_sqs_instance_states].join(', ')})") do |opt|
     options[:aws_sqs_instance_states] = opt
