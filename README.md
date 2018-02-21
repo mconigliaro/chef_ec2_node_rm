@@ -2,7 +2,11 @@
 
 If you're managing EC2 instances with a Chef server, this gem can help prevent your server from becoming polluted with stale node/client data by automatically deleting it whenever instances are destroyed.
 
-## Getting Started
+## AWS Credentials
+
+This gem relies on [aws-sdk](https://aws.amazon.com/sdk-for-ruby/), so AWS credentials will automatically be read from the usual places (credential files under `~/.aws`, environment variables, IAM roles, etc.).
+
+## Installation
 
 1. Create an SQS queue for your EC2 termination events.
 
@@ -24,7 +28,7 @@ If you're managing EC2 instances with a Chef server, this gem can help prevent y
     }
     ```
 
-1. Configure `knife` on your chef server.
+1. [Configure knife](https://docs.chef.io/knife_setup.html) on your Chef server.
 
 1. Install `chef_ec2_node_rm` on your Chef server:
 
@@ -83,7 +87,7 @@ If you're managing EC2 instances with a Chef server, this gem can help prevent y
       }
     }
 
-## Releases
+### Releases
 
     gem build chef_ec2_node_rm.gemspec
     gem install chef_ec2_node_rm-*.gem
