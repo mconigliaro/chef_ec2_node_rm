@@ -24,7 +24,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'minitest', '~> 5.0'
   spec.add_development_dependency 'minitest-autotest', '~> 1.0'
   spec.add_development_dependency 'rake', '~> 10.0'
-  spec.add_development_dependency 'rubocop', '~> 0.45'
+  spec.add_development_dependency 'rubocop', '~> 0.58'
 
   spec.add_dependency 'aws-sdk-sqs', '~> 1.3'
 end
